@@ -2,7 +2,10 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { initialize, enable } from '@electron/remote/main/index.js'
 import path from 'node:path'
 import os from 'node:os'
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url'
+
+import writeFileAtomic from 'write-file-atomic'
 
 initialize()
 
@@ -11,14 +14,115 @@ const platform = process.platform || os.platform()
 
 const currentDir = fileURLToPath(new URL('.', import.meta.url))
 
-let mainWindow
+// UTILITY FUNCTIONS
 
-function handleSetTitle (event, title) {
-  console.log('TEST')
+// const writeData = async (filename, data) => {
+//   try {
+//     await writeFileAtomic(filename, data);
+//     console.log('File written successfully.');
+//   } catch (err) {
+//     console.error('Error writing file:', err);
+//   }
+// }
+
+const writeDataSync = (filename, data) => {
+  try {
+    writeFileAtomic.sync(filename, data);
+    console.log('File written successfully.');
+  } catch (err) {
+    console.error('Error writing file:', err); 
+  }
+}
+
+const dirExistsSync = (dir) => {
+  return fs.existsSync(dir)
+}
+
+const createDirSync = (dir) => {
+  fs.mkdirSync(dir)
+}
+
+const getDirSync = (dir) => {
+  return fs.readdirSync(dir)
+}
+
+// APP LOGIC
+let uData
+let appDir
+let logFile 
+
+const logMsgSync = (msg) => {
+  const logMsg = `${new Date().toISOString()} - ${msg}`
+  console.log(`APPLOG: ${logMsg}`)
+  fs.appendFile(logFile, `${logMsg}\n`, (err) => {
+    if (err) {
+      console.error('Error appending to file:', err)
+      return
+    } 
+  })
+}
+
+const createManifest = (appDir) => {
+  const info = { version: '1.0.0', vendor: 'Izzup', license: 'AGPL'}
+
+  const infoPath = `${appDir}/izzup_info.json`
+
+  writeDataSync(infoPath, info)
+
+  logMsgSync(`Izzup info written: ${infoPath}`)
+}
+
+const initApp = () => {
+
+  uData = app.getPath('userData')
+
+  appDir = `${uData}/Izzup`
+
+  logFile = `${appDir}/logs.txt`
+
+  if(!dirExistsSync(appDir)) {
+    createDirSync(appDir)
+    logMsgSync(`Izzup app dir created at: ${appDir}`)
+    createManifest(appDir) 
+  }
+}
+
+
+// HANDLERS
+
+const handleSetTitle = (event, title) => {
+  console.log(`EVENT ${event}`)
   const webContents = event.sender
   const win = BrowserWindow.fromWebContents(webContents)
   win.setTitle(title)
 }
+
+const handleOpenContentDir = (event, dir) => {
+  console.log('EVENT')
+  console.log(event)
+  console.log(`DIR ${dir}`)
+
+  // Directory MUST be empty OR have an existing Izzup.manifest file
+  const dirContents = getDirSync(dir)
+  if(dirContents.includes('Izzup.manifest')) {
+    // Use the directory
+    logMsgSync(`INFO Existing manifest found in: ${dir}`)
+  } else {
+    // Empty? Create an Izzup.manifest and use the directory
+    if(dirContents.length == 0) {
+      console.log(`CREATE MANIFEST IN DIR ${dir}`)
+    } else {
+      // Else this in not a valid content directory
+      logMsgSync(`ERROR! Directory already in use: ${dir}`)
+    }
+
+    
+  }
+}
+
+// CREATE WINDOW
+
+let mainWindow
 
 function createWindow () {
   /**
@@ -33,6 +137,8 @@ function createWindow () {
     webPreferences: {
       sandbox: false, // <-- to be able to import @electron/remote in preload script
       contextIsolation: true,
+      // nodeIntegration: true,
+      // enableRemoteModule: true,
       // More info: https://v2.quasar.dev/quasar-cli-vite/developing-electron-apps/electron-preload-script
       preload: path.resolve(
         currentDir,
@@ -66,7 +172,15 @@ function createWindow () {
 }
 
 app.whenReady().then(()=> {
+
+  // Init app config and log activity
+  initApp()
+  logMsgSync('Izzup app started')
+
+  // Register IPC message handlers
   ipcMain.on('set-title', handleSetTitle)
+  ipcMain.on('open-content-dir', handleOpenContentDir)
+
   createWindow()
 })
 

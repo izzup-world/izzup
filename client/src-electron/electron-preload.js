@@ -29,7 +29,8 @@
  */
 import { contextBridge, ipcRenderer } from 'electron'
 import { BrowserWindow } from '@electron/remote'
-import { dialog } from '@electron/remote';
+import { dialog } from '@electron/remote'
+
 
 contextBridge.exposeInMainWorld('izzupAPI', {
   minimize () {
@@ -62,5 +63,15 @@ contextBridge.exposeInMainWorld('izzupAPI', {
   setTitle (title) {
     console.log(`TITLE ${title}`)
     ipcRenderer.send('set-title', title)
+  },
+
+  async openAppRootDir () {
+    console.log('Preload - Opening app root dir')
+    const response = await dialog.showOpenDialog({
+      title: 'Izzup root directory',
+      properties: ['openDirectory'],
+    });
+    const selectedDir = response.filePaths[0]
+    ipcRenderer.send('open-content-dir', selectedDir)
   } 
 })
