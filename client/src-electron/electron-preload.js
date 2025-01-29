@@ -51,27 +51,34 @@ contextBridge.exposeInMainWorld('izzupAPI', {
     BrowserWindow.getFocusedWindow().close()
   },
 
-  async openFileDialog (title, folder, filters) {
-    const response = await dialog.showOpenDialog({
-      title,
-      filters,
-      properties: ['openFile', 'multiSelections'],
-    });
-    return response.filePaths;
-  },
+  // async openFileDialog (title, folder, filters) {
+  //   const response = await dialog.showOpenDialog({
+  //     title,
+  //     filters,
+  //     properties: ['openFile', 'multiSelections'],
+  //   });
+  //   return response.filePaths;
+  // },
 
   setTitle (title) {
     console.log(`TITLE ${title}`)
     ipcRenderer.send('set-title', title)
   },
 
-  async openAppRootDir () {
-    console.log('Preload - Opening app root dir')
+  async openContentDir () {
+    console.log('Preload - Opening content dir')
     const response = await dialog.showOpenDialog({
-      title: 'Izzup root directory',
+      title: 'Izzup content directory',
       properties: ['openDirectory'],
     });
     const selectedDir = response.filePaths[0]
     ipcRenderer.send('open-content-dir', selectedDir)
-  } 
+  },
+
+  openFile: () => ipcRenderer.invoke('dialog:openFile'),
+
+  onOpenContentDir: (callback) => ipcRenderer.on('open-content-dir', (_event, value) => callback(value)),
+  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', (_event, value) => callback(value)),
+  counterValue: (value) => ipcRenderer.send('counter-value', value)
+
 })

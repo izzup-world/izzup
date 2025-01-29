@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
 import { initialize, enable } from '@electron/remote/main/index.js'
 import path from 'node:path'
 import os from 'node:os'
@@ -51,6 +51,8 @@ let uData
 let appDir
 let logFile 
 
+let mainWindow
+
 const logMsgSync = (msg) => {
   const logMsg = `${new Date().toISOString()} - ${msg}`
   console.log(`APPLOG: ${logMsg}`)
@@ -90,6 +92,23 @@ const initApp = () => {
 
 // HANDLERS
 
+const handleFileOpen = async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog()
+  if (!canceled) {
+    return filePaths[0]
+  }
+}
+
+const handleContentDirOpen = async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    title: 'Izzup content directory',
+    properties: ['openDirectory'],
+  })
+  if (!canceled) {
+    return filePaths[0]
+  }
+}
+
 const handleSetTitle = (event, title) => {
   console.log(`EVENT ${event}`)
   const webContents = event.sender
@@ -107,13 +126,16 @@ const handleOpenContentDir = (event, dir) => {
   if(dirContents.includes('Izzup.manifest')) {
     // Use the directory
     logMsgSync(`INFO Existing manifest found in: ${dir}`)
+    mainWindow.webContents.send('open-content-dir', dir)
   } else {
     // Empty? Create an Izzup.manifest and use the directory
     if(dirContents.length == 0) {
       console.log(`CREATE MANIFEST IN DIR ${dir}`)
+      mainWindow.webContents.send('open-content-dir', dir)
     } else {
       // Else this in not a valid content directory
       logMsgSync(`ERROR! Directory already in use: ${dir}`)
+      mainWindow.webContents.send('open-content-dir', dir)
     }
 
     
@@ -121,8 +143,6 @@ const handleOpenContentDir = (event, dir) => {
 }
 
 // CREATE WINDOW
-
-let mainWindow
 
 function createWindow () {
   /**
@@ -146,6 +166,25 @@ function createWindow () {
       )
     }
   })
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: app.name,
+      submenu: [
+        {
+          click: () => mainWindow.webContents.send('update-counter', 1),
+          label: 'Increment'
+        },
+        {
+          click: () => mainWindow.webContents.send('update-counter', -1),
+          label: 'Decrement'
+        }
+      ]
+    }
+
+  ])
+
+  Menu.setApplicationMenu(menu)
 
   enable(mainWindow.webContents)
 
@@ -180,6 +219,15 @@ app.whenReady().then(()=> {
   // Register IPC message handlers
   ipcMain.on('set-title', handleSetTitle)
   ipcMain.on('open-content-dir', handleOpenContentDir)
+
+  ipcMain.handle('dialog:openFile', handleFileOpen)
+
+  ipcMain.handle('dialog:openContentDir', handleContentDirOpen)
+
+  ipcMain.on('counter-value', (_event, value) => {
+    console.log(value) // will print value to Node console
+  })
+  
 
   createWindow()
 })

@@ -1,6 +1,11 @@
 <template>
   <q-page class="flex flex-center">
-    <q-btn @click="openAppRootDir()" label="Open Izzup" no-caps size="xl"></q-btn>
+    <q-btn @click="openContentDir()" label="Open Izzup" no-caps size="xl"></q-btn>
+
+    <q-btn @click="openFile()" label="Open Izzup" no-caps size="xl"></q-btn>
+    File path: <strong id="filePath"></strong>
+
+    Current value: <strong id="counter">0</strong>
   </q-page>
 </template>
 
@@ -8,7 +13,7 @@
 //import { ipcRenderer } from 'electron'
 // window.izzupAPI.toggleMaximize()
 
-// import { ref } from 'vue'
+import { ref } from 'vue'
 
 // const title = ref()
 
@@ -25,10 +30,31 @@
 //   window.izzupAPI.setTitle (title.value)
 // }
 
-const openAppRootDir = () => {
+const filePath = ref()
+// const counter = ref()
+
+const openContentDir = () => {
     console.log('Start page open root button clicked')
-    window.izzupAPI.openAppRootDir()
+    window.izzupAPI.openContentDir()
 }
+
+const openFile = async () => {
+  filePath.value = await window.izzupAPI.openFile()
+  console.log(filePath.value) 
+}
+
+window.izzupAPI.onOpenContentDir((value) => {
+ console.log('CONTERNT DIR', value)
+})
+
+// const onContentDirUpdated = (value) => {
+//   console.log(`DIR AVLUE: ${value}`)
+// }
+
+// const onUpdateCounter = async () => {
+//   filePath.value = await window.izzupAPI.openFile()
+//   console.log(counter.value) 
+// }
 
 
 </script>
