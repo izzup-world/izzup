@@ -48,7 +48,7 @@ const getDirSync = (dir) => {
 
 // APP LOGIC
 let uData
-let appDir
+//let appDir
 let logFile 
 
 let mainWindow
@@ -64,28 +64,38 @@ const logMsgSync = (msg) => {
   })
 }
 
-const createManifest = (appDir) => {
+const createInfoFile = (dir) => {
   const info = { version: '1.0.0', vendor: 'Izzup', license: 'AGPL'}
 
-  const infoPath = `${appDir}/izzup_info.json`
+  const infoPath = `${dir}/izzupInfo.json`
 
   writeDataSync(infoPath, info)
 
   logMsgSync(`Izzup info written: ${infoPath}`)
 }
 
+const createManifestFile = (dir) => {
+  const info = { accounts: [] }
+
+  const infoPath = `${dir}/izzupManifest.json`
+
+  writeDataSync(infoPath, info)
+
+  logMsgSync(`Izzup manifest written: ${infoPath}`)
+}
+
 const initApp = () => {
 
   uData = app.getPath('userData')
 
-  appDir = `${uData}/Izzup`
+  const appDir = `${uData}/Izzup`
 
   logFile = `${appDir}/logs.txt`
 
   if(!dirExistsSync(appDir)) {
     createDirSync(appDir)
     logMsgSync(`Izzup app dir created at: ${appDir}`)
-    createManifest(appDir) 
+    createInfoFile(appDir) 
   }
 }
 
@@ -99,13 +109,41 @@ const handleFileOpen = async () => {
   }
 }
 
+const checkContentDir = (dir) => { 
+  // The dir passed in should come from the Electron file dialog,
+  //   so we know it's a valid directory.
+  // The directory MUST be empty OR have an existing izzupManifest.json file.
+  const dirContents = getDirSync(dir)
+  if(dirContents.includes('izzupManifest.json')) {
+    return 'EXISTING_MANIFEST'
+  } else if(dirContents.length == 0) {
+      return 'EMPTY_DIR'
+  } else {
+    return 'DIR_INUSE'
+  }
+}
+
 const handleContentDirOpen = async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     title: 'Izzup content directory',
     properties: ['openDirectory'],
   })
   if (!canceled) {
-    return filePaths[0]
+    const selectedDir = filePaths[0]
+    const dirState = checkContentDir(selectedDir)
+    switch(dirState) {    
+      case 'EXISTING_MANIFEST':
+        logMsgSync(`INFO Existing manifest found in: ${selectedDir}`)
+        return {contentDir: selectedDir, state: 'EXISTING_MANIFEST'}
+      case 'EMPTY_DIR':
+        logMsgSync(`INFO Empty directory selected: ${selectedDir}`)
+        createManifestFile(selectedDir)
+        return {contentDir: selectedDir, state: 'EMPTY_DIR'}
+      case 'DIR_INUSE':
+        logMsgSync(`ERROR! Directory already in use: ${selectedDir}`)
+        return {contentDir: selectedDir, state: 'DIR_INUSE'}
+        
+    }
   }
 }
 

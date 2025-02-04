@@ -29,7 +29,7 @@
  */
 import { contextBridge, ipcRenderer } from 'electron'
 import { BrowserWindow } from '@electron/remote'
-import { dialog } from '@electron/remote'
+// import { dialog } from '@electron/remote'
 
 
 contextBridge.exposeInMainWorld('izzupAPI', {
@@ -65,17 +65,18 @@ contextBridge.exposeInMainWorld('izzupAPI', {
     ipcRenderer.send('set-title', title)
   },
 
-  async openContentDir () {
-    console.log('Preload - Opening content dir')
-    const response = await dialog.showOpenDialog({
-      title: 'Izzup content directory',
-      properties: ['openDirectory'],
-    });
-    const selectedDir = response.filePaths[0]
-    ipcRenderer.send('open-content-dir', selectedDir)
-  },
+  // async openContentDir () {
+  //   console.log('Preload - Opening content dir')
+  //   const response = await dialog.showOpenDialog({
+  //     title: 'Izzup content directory',
+  //     properties: ['openDirectory'],
+  //   });
+  //   const selectedDir = response.filePaths[0]
+  //   ipcRenderer.send('open-content-dir', selectedDir)
+  // },
 
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
+  openContentDir: () => ipcRenderer.invoke('dialog:openContentDir'),
 
   onOpenContentDir: (callback) => ipcRenderer.on('open-content-dir', (_event, value) => callback(value)),
   onUpdateCounter: (callback) => ipcRenderer.on('update-counter', (_event, value) => callback(value)),
