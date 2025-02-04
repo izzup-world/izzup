@@ -1,11 +1,20 @@
 <template>
   <q-page class="flex flex-center">
-    <q-btn @click="openContentDir()" label="Open Izzup" no-caps size="xl"></q-btn>
-
+    <q-card class="q-ma-md" style="max-width: 400px">
+      <q-card-section class="q-pa-md">
+        <div class="text-h6">Start</div>
+        <div class="text-bold">Options:</div>
+        <div></div>
+      </q-card-section>
+      <q-card-section class="q-pa-md">
+        <q-btn @click="openContentDir()" label="Open" no-caps size="xl"></q-btn>
+      </q-card-section>
+      </q-card>
+<!-- 
     <q-btn @click="openFile()" label="Open Izzup" no-caps size="xl"></q-btn>
     File path: <strong id="filePath"></strong>
 
-    Current value: <strong id="counter">0</strong>
+    Current value: <strong id="counter">0</strong> -->
   </q-page>
 </template>
 
@@ -13,7 +22,7 @@
 //import { ipcRenderer } from 'electron'
 // window.izzupAPI.toggleMaximize()
 
-import { ref } from 'vue'
+// import { ref } from 'vue'
 
 // const title = ref()
 
@@ -30,22 +39,28 @@ import { ref } from 'vue'
 //   window.izzupAPI.setTitle (title.value)
 // }
 
-const filePath = ref()
+// const filePath = ref()
 // const counter = ref()
 
-const openContentDir = () => {
+const openContentDir = async () => {
     console.log('Start page open root button clicked')
-    window.izzupAPI.openContentDir()
+    const dir = await window.izzupAPI.openContentDir()
+    if(dir.error) {
+      console.log(`DIR ERROR: ${dir.error}`)
+    }
+
+    console.log(`DIR IS: ${dir.contentDir}`)
+    
 }
 
-const openFile = async () => {
-  filePath.value = await window.izzupAPI.openFile()
-  console.log(filePath.value) 
-}
+// const openFile = async () => {
+//   filePath.value = await window.izzupAPI.openFile()
+//   console.log(filePath.value) 
+// }
 
-window.izzupAPI.onOpenContentDir((value) => {
- console.log('CONTERNT DIR', value)
-})
+// window.izzupAPI.onOpenContentDir((value) => {
+//  console.log('CONTENT DIR', value)
+// })
 
 // const onContentDirUpdated = (value) => {
 //   console.log(`DIR AVLUE: ${value}`)

@@ -1,0 +1,15 @@
+# Izzup App Flow
+
+## Izzup Desktop - Electron app
+
+```mermaid
+graph TD
+    A[Start Izzup Desktop] --> B[Check IzzupManifest.json]
+    B -->|Exists?| C[Load manifest]
+    B -->|No manifest| D[Create manifest]
+    D --> C[Load manifest]
+    C --> E[Return manifest to client]
+    E --> F[Client draws menus using manifest data]
+    F --> G[User clicks on menu item]
+    G --> H[Client uses 2-way IPC to interact with main process]
+```
